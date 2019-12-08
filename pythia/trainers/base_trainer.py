@@ -50,21 +50,25 @@ class BaseTrainer:
     def _init_process_group(self):
         training_parameters = self.config.training_parameters
         self.local_rank = training_parameters.local_rank
+        # self.distributed_devices = training_parameters.distributed_devices
         self.device = training_parameters.device
 
-        if self.local_rank is not None and training_parameters.distributed:
-            if not torch.distributed.is_nccl_available():
-                raise RuntimeError(
-                    "Unable to initialize process group: NCCL is not available"
-                )
-            torch.distributed.init_process_group(backend="nccl")
-            synchronize()
+        # if (self.local_rank is not None or self.distributed_devices is not None) and training_parameters.distributed:
+        # if training_parameters.distributed:
+        #     if not torch.distributed.is_nccl_available():
+        #         raise RuntimeError(
+        #             "Unable to initialize process group: NCCL is not available"
+        #         )
+        #     torch.distributed.init_process_group(backend="nccl")
+        #     synchronize()
 
         if (
             "cuda" in self.device
-            and training_parameters.distributed
-            and self.local_rank is not None
+            and training_parameters.data_parallel
+            # and (self.local_rank is not None or self.distributed_devices is not None)
         ):
+            self.device = torch.device("cuda") #, self.local_rank)
+        else:
             self.device = torch.device("cuda", self.local_rank)
 
         registry.register("current_device", self.device)
@@ -101,10 +105,13 @@ class BaseTrainer:
         training_parameters = self.config.training_parameters
 
         data_parallel = training_parameters.data_parallel
-        distributed = training_parameters.distributed
+        # distributed = training_parameters.distributed
+        # distributed_devices = training_parameters.distributed_devices
+
+        # print("\n\n\n\n\n###################CUDA CHECK: {}\t{}\t{}\t{}\n\n\n\n\n\n".format(torch.cuda.device_count(), data_parallel, distributed, distributed_devices))
 
         registry.register("data_parallel", data_parallel)
-        registry.register("distributed", distributed)
+        # registry.register("distributed", distributed)
 
         if "cuda" in str(self.config.training_parameters.device):
             rank = self.local_rank if self.local_rank is not None else 0
@@ -123,17 +130,20 @@ class BaseTrainer:
             and torch.cuda.device_count() > 1
             and data_parallel is True
         ):
+            # if (self.distributed_devices):
+            #     self.model = torch.nn.DataParallel(self.model, device_ids=self.distributed_devices).to(device=self.device)
+            # else:
             self.model = torch.nn.DataParallel(self.model)
 
-        if (
-            "cuda" in str(self.device)
-            and self.local_rank is not None
-            and distributed is True
-        ):
-            torch.cuda.set_device(self.local_rank)
-            self.model = torch.nn.parallel.DistributedDataParallel(
-                self.model, device_ids=[self.local_rank]
-            )
+        # if (
+        #     "cuda" in str(self.device)
+        #     and self.distributed_devices is not None
+        #     and distributed is True
+        # ):
+        #     # torch.cuda.set_device(self.local_rank)
+        #     self.model = torch.nn.parallel.DistributedDataParallel(
+        #         self.model, device_ids=self.distributed_devices
+        #     )
 
     def load_optimizer(self):
         self.optimizer = build_optimizer(self.model, self.config)
@@ -225,10 +235,12 @@ class BaseTrainer:
             if self.current_epoch > self.max_epochs:
                 break
 
+            print("Epoch [{}/{}]\tBatches: {}".format(self.current_epoch, self.max_epochs, len(self.train_loader)))
             for batch in self.train_loader:
                 self.profile("Batch load time")
                 self.current_iteration += 1
                 self.writer.write(self.current_iteration, "debug")
+                print("step:\tep: [{}/{}]\titr: [{}/{}]\t".format(self.current_epoch, self.max_epochs, self.current_iteration, self.max_iterations))
 
                 registry.register("current_iteration", self.current_iteration)
 

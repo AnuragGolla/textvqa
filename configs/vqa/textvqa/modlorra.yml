@@ -97,19 +97,25 @@ optimizer_attributes:
     weight_decay: 0
   type: Adamax
 training_parameters:
+    device: cuda
+    data_parallel: false
+    local_rank: 2
+    logger_level: info
     clip_norm_mode: all
     clip_gradients: true
     max_grad_l2_norm: 0.25
     lr_scheduler: true
-    lr_steps:
-    - 14000
+    lr_steps: 
+    - 22 # 3500
     lr_ratio: 0.01
     use_warmup: true
     warmup_factor: 0.2
-    warmup_iterations: 1000
-    max_iterations: 24000
+    warmup_iterations: 22 # 250
+    max_iterations: 27 # 6000
+    log_interval: 5 # 100
+    snapshot_interval: 20 # 400
     batch_size: 128
-    num_workers: 0
+    num_workers: 7
     task_size_proportional_sampling: true
     monitored_metric: vqa_accuracy
     pretrained_mapping:

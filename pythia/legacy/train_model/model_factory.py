@@ -104,7 +104,9 @@ def prepare_model(num_vocab_txt, num_choices, **model_config):
     if use_cuda:
         my_model = my_model.cuda()
 
+    print("\n\n\n\n\nCUDA CHECK\n\n\n\n\n")
     if torch.cuda.device_count() > 1:
+        print("\n\n\n\n\nDEVICES FOUND: {}\n\n\n\n\n".format(torch.cuda.device_count()))
         my_model = nn.DataParallel(my_model)
 
     return my_model
