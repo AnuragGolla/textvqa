@@ -35,6 +35,7 @@ class TopDownBottomUp(BaseModel):
     def forward(
         self, image_feat_variable, input_text_variable, input_answers=None, **kwargs
     ):
+        # print("[ topdownbottomup ] runs ***")
         text_embeddings = []
         for q_model in self.text_embedding_models:
             q_embedding = q_model(input_text_variable)

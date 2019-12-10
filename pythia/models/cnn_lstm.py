@@ -67,6 +67,7 @@ class CNNLSTM(BaseModel):
         self.classifier = nn.Linear(self.config.classifier.input_dim, num_answer_choices)
 
     def forward(self, sample_list):
+        # print("[ cnnlstm ] runs ***")
         self.lstm.flatten_parameters()
 
         question = sample_list.text

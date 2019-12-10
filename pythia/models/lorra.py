@@ -39,24 +39,47 @@ class LoRRA(Pythia):
 
     def forward(self, sample_list):
         sample_list.text = self.word_embedding(sample_list.text)
-        text_embedding_total = self.process_text_embedding(sample_list)
+        print("sample_list.text\t{}".format(sample_list.text.shape))
+        
 
+        text_embedding_total = self.process_text_embedding(sample_list)
+        print("text_embedding_total\t{}".format(text_embedding_total.shape))
+
+        
         image_embedding_total, _ = self.process_feature_embedding(
             "image", sample_list, text_embedding_total
         )
+        print("image_embedding_total\t{}".format(image_embedding_total.shape))
+
 
         context_embedding_total, _ = self.process_feature_embedding(
             "context", sample_list, text_embedding_total, ["order_vectors"]
         )
+        print("context_embedding_total\t{}".format(context_embedding_total.shape))
+
 
         if self.inter_model is not None:
+            print("inter_model\t{}".format(True))
             image_embedding_total = self.inter_model(image_embedding_total)
+            print("image_embedding_total\t{}".format(image_embedding_total.shape))
+        else:
+            print("inter_model\t{}".format(False))
+            print("image_embedding_total\t{}".format(image_embedding_total.shape))
+
 
         joint_embedding = self.combine_embeddings(
             ["image", "text"],
             [image_embedding_total, text_embedding_total, context_embedding_total],
         )
+        print("joint_embedding\t{}".format(joint_embedding.shape))
+
 
         scores = self.calculate_logits(joint_embedding)
+        print("scores\t{}".format(scores.shape))
 
+        print("----------------------------------------------------------")
         return {"scores": scores}
+
+
+
+

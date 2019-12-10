@@ -235,12 +235,12 @@ class BaseTrainer:
             if self.current_epoch > self.max_epochs:
                 break
 
-            print("Epoch [{}/{}]\tBatches: {}".format(self.current_epoch, self.max_epochs, len(self.train_loader)))
+            print("Epoch [{}/{}]\tIterations: {}".format(self.current_epoch, self.max_epochs, self.current_iteration))
             for batch in self.train_loader:
                 self.profile("Batch load time")
                 self.current_iteration += 1
                 self.writer.write(self.current_iteration, "debug")
-                print("step:\tep: [{}/{}]\titr: [{}/{}]\t".format(self.current_epoch, self.max_epochs, self.current_iteration, self.max_iterations))
+                # print("step:\tep: [{}/{}]\titr: [{}/{}]\t".format(self.current_epoch, self.max_epochs, self.current_iteration, self.max_iterations))
 
                 registry.register("current_iteration", self.current_iteration)
 

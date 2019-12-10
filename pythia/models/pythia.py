@@ -33,6 +33,7 @@ class Pythia(BaseModel):
         assert len(self._datasets) > 0
         text_processor = registry.get(self._datasets[0] + "_text_processor")
         vocab = text_processor.vocab
+        # print("vocab type: ", type(vocab))
         self.word_embedding = vocab.get_embedding(torch.nn.Embedding, embedding_dim=300)
 
     def _init_text_embeddings(self, attr="text"):
@@ -40,8 +41,11 @@ class Pythia(BaseModel):
             attr += "_embeddings"
 
         text_embeddings = []
+        # print("************")
+        # print("attr: ", attr)
         text_embeddings_list_config = self.config[attr]
-
+        # print("text_embeddings_list_config type 0: ", type(text_embeddings_list_config[0]), len(text_embeddings_list_config[0]))
+        # print("text_embeddings_list_config 0: ", text_embeddings_list_config[0])
         embeddings_out_dim = 0
 
         for text_embedding in text_embeddings_list_config:
