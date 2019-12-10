@@ -99,9 +99,14 @@ class Pythia(BaseModel):
             for feature_attn_model_params in feature_attn_model_list:
                 feature_embedding = ImageEmbedding(
                     getattr(self, attr + "_feature_dim"),
-                    self.text_embeddings_out_dim,
+                    getattr(self, attr + "_feature_dim"),
                     **feature_attn_model_params
                 )
+                # feature_embedding = ImageEmbedding(
+                #     getattr(self, attr + "_feature_dim"),
+                #     self.text_embeddings_out_dim,
+                #     **feature_attn_model_params
+                # )
                 feature_embeddings.append(feature_embedding)
                 self.feature_embeddings_out_dim += feature_embedding.out_dim
 
@@ -261,7 +266,10 @@ class Pythia(BaseModel):
 
             # Forward through these embeddings one by one
             for feature_embedding_model in feature_embedding_models:
-                inp = (encoded_feature, text_embedding_total, feature_dim, extra)
+                # print("Enc Feat: {}, TXT Emb: {}".format(encoded_feature.shape, text_embedding_total.shape))
+                modified_encoded_feature = torch.sum(encoded_feature, dim=1, keepdim=False)
+                inp = (encoded_feature, modified_encoded_feature, feature_dim, extra)
+                # inp = (encoded_feature, text_embedding_total, feature_dim, extra)
 
                 embedding, attention = feature_embedding_model(*inp)
                 feature_embeddings.append(embedding)

@@ -33,6 +33,36 @@ class AttentionLayer(nn.Module):
     def forward(self, *args, **kwargs):
         return self.module(*args, **kwargs)
 
+# class SelfAttentionLayer(nn.Module):
+#     def __init__(self, image_dim, **kwargs):
+#         super(SelfAttentionLayer, self).__init__()
+# 
+#         # combine_type = kwargs["modal_combine"]["type"]
+#         # combine_params = kwargs["modal_combine"]["params"]
+#         # modal_combine_layer = ModalCombineLayer(
+#         #     combine_type, image_dim, question_dim, **combine_params
+#         # )
+# 
+#         transform_type = kwargs["transform"]["type"]
+#         transform_params = kwargs["transform"]["params"]
+#         # transform_layer = TransformLayer(
+#         #     transform_type, modal_combine_layer.out_dim, **transform_params
+#         # )
+#         transform_layer = TransformLayer(
+#             transform_type, image_dim, **transform_params
+#         )
+# 
+#         normalization = kwargs["normalization"]
+# 
+#         self.module = TopDownAttention(
+#             modal_combine_layer, transform_layer, normalization
+#         )
+# 
+#         if getattr(self.module, "out_dim"):
+#             self.out_dim = self.module.out_dim
+# 
+#     def forward(self, *args, **kwargs):
+#         return self.module(*args, **kwargs)
 
 class ConcatenationAttention(nn.Module):
     def __init__(self, image_feat_dim, txt_rnn_embeding_dim, hidden_size):
@@ -134,7 +164,7 @@ class TopDownAttention(nn.Module):
         return attention
 
     def forward(self, image_feat, question_embedding, image_locs=None):
-        print("[ topdown attention ] runs")
+        # print("[ topdown attention ] runs")
         # N x K x joint_dim
         joint_feature = self.combination_layer(image_feat, question_embedding)
         # N x K x n_att
