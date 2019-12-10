@@ -338,6 +338,7 @@ class TopDownAttentionLSTM(nn.Module):
         self.out_dim = kwargs["attention_dim"]
 
     def forward(self, image_feat, embedding):
+        print("ERROR => TopDownAttentionLSTM Running!")
         image_feat_mean = image_feat.mean(1)
 
         # Get LSTM state

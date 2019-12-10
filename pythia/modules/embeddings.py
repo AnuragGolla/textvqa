@@ -64,6 +64,7 @@ class BiLSTMTextEmbedding(nn.Module):
         dropout,
         bidirectional=False,
         rnn_type="GRU",
+        **kwargs,
     ):
         super(BiLSTMTextEmbedding, self).__init__()
         self.text_out_dim = hidden_dim
@@ -83,18 +84,19 @@ class BiLSTMTextEmbedding(nn.Module):
             batch_first=True,
         )
 
+    # def forward(self, x):
+    #     out, _ = self.recurrent_encoder(x)
+    #     # Return last state
+    #     if self.bidirectional:
+    #         return out[:, -1]
+
+    #     forward_ = out[:, -1, : self.num_hid]
+    #     backward = out[:, 0, self.num_hid :]
+    #     return torch.cat((forward_, backward), dim=1)
+
     def forward(self, x):
-        out, _ = self.recurrent_encoder(x)
-        # Return last state
-        if self.bidirectional:
-            return out[:, -1]
-
-        forward_ = out[:, -1, : self.num_hid]
-        backward = out[:, 0, self.num_hid :]
-        return torch.cat((forward_, backward), dim=1)
-
-    def forward_all(self, x):
         output, _ = self.recurrent_encoder(x)
+        output = torch.sum(output, dim=1, keepdim=False)
         return output
 
 
@@ -202,24 +204,39 @@ class ImageEmbedding(nn.Module):
 
     def forward(self, image_feat_variable, question_embedding, image_dims, extra={}):
         # N x K x n_att
-        attention = self.image_attention_model(
-            image_feat_variable, question_embedding, image_dims
-        )
-        att_reshape = attention.permute(0, 2, 1)
+        # print("--------- Image Embedding ----------")
+        # print("Im Shape: {}, Q Shape: {}".format(image_feat_variable.shape, question_embedding.shape))
+        # attention = self.image_attention_model(
+        #     image_feat_variable, question_embedding, image_dims
+        # )
+        # # attention = torch.ones((image_feat_variable.shape[0], image_feat_variable.shape[1], 1)).to(device=self.device)
+        # att_reshape = attention.permute(0, 2, 1)
+        # # print("Att Shape: {}".format(att_reshape.shape))
+        # # att_t = torch.sum(att_reshape, dim=2)
+        # # print("Att t shape: {}".format(att_t.shape))
+        # # print(att_t)
 
+        # order_vectors = getattr(extra, "order_vectors", None)
+
+        # if order_vectors is not None:
+        #     image_feat_variable = torch.cat(
+        #         [image_feat_variable, order_vectors], dim=-1
+        #     )
+        # tmp_embedding = torch.bmm(
+        #     att_reshape, image_feat_variable
+        # )  # N x n_att x image_dim
+        # batch_size = att_reshape.size(0)
+        # image_embedding = tmp_embedding.view(batch_size, -1)
+        
         order_vectors = getattr(extra, "order_vectors", None)
 
         if order_vectors is not None:
             image_feat_variable = torch.cat(
                 [image_feat_variable, order_vectors], dim=-1
             )
-        tmp_embedding = torch.bmm(
-            att_reshape, image_feat_variable
-        )  # N x n_att x image_dim
-        batch_size = att_reshape.size(0)
-        image_embedding = tmp_embedding.view(batch_size, -1)
-
-        return image_embedding, attention
+        image_embedding = torch.sum(image_feat_variable, dim=1, keepdim=False)
+        # print("Img embedding return shape: {}".format(image_embedding.shape))
+        return image_embedding, image_embedding# attention
 
 
 class ImageFinetune(nn.Module):

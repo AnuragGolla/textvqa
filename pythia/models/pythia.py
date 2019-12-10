@@ -55,6 +55,8 @@ class Pythia(BaseModel):
             self._update_text_embedding_args(embedding_kwargs)
 
             embedding = TextEmbedding(embedding_type, **embedding_kwargs)
+            # print("Text Embedding Type Used: ", embedding_type)
+            # print("text embedding out dim: {}".format(embedding.text_out_dim))
 
             text_embeddings.append(embedding)
             embeddings_out_dim += embedding.text_out_dim
@@ -89,12 +91,14 @@ class Pythia(BaseModel):
         num_feature_feat = len(
             getattr(self.config, "{}_feature_encodings".format(attr))
         )
+        # print(attr, " Number feature feats: ", num_feature_feat)
 
         self.feature_embeddings_out_dim = 0
 
         for _ in range(num_feature_feat):
             feature_embeddings = []
             feature_attn_model_list = self.config[attr + "_feature_embeddings"]
+            # print(attr, " Number attn models: ", len(feature_attn_model_list))
 
             for feature_attn_model_params in feature_attn_model_list:
                 feature_embedding = ImageEmbedding(

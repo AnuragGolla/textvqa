@@ -31,6 +31,7 @@ class AttentionLayer(nn.Module):
             self.out_dim = self.module.out_dim
 
     def forward(self, *args, **kwargs):
+        print("ERROR => AttentionLayer Running!")
         return self.module(*args, **kwargs)
 
 
@@ -134,6 +135,7 @@ class TopDownAttention(nn.Module):
         return attention
 
     def forward(self, image_feat, question_embedding, image_locs=None):
+        print("ERROR => TopDownAttention Running!")
         print("[ topdown attention ] runs")
         # N x K x joint_dim
         joint_feature = self.combination_layer(image_feat, question_embedding)

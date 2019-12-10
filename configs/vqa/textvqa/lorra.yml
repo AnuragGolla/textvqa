@@ -75,16 +75,23 @@ model_attributes:
         # 300 for FastText and 50 for order vectors
         context_dim: 350
     text_embeddings:
-    - type: attention
+    - type: bilstm
       params:
-        hidden_dim: 1024
+        hidden_dim: 2048
         num_layers: 1
-        conv1_out: 512
-        conv2_out: 2
         dropout: 0
         embedding_dim: 300
-        kernel_size: 1
-        padding: 0
+        bidirectional: False
+#     - type: attention
+#       params:
+#         hidden_dim: 1024
+#         num_layers: 1
+#         conv1_out: 512
+#         conv2_out: 2
+#         dropout: 0
+#         embedding_dim: 300
+#         kernel_size: 1
+#         padding: 0
     context_embeddings:
     - type: identity
       params:
