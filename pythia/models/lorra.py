@@ -59,13 +59,13 @@ class LoRRA(Pythia):
 
 
         if self.inter_model is not None:
-            print("inter_model\t{}".format(True))
+            # print("inter_model\t{}".format(True))
             image_embedding_total = self.inter_model(image_embedding_total)
-            print("image_embedding_total\t{}".format(image_embedding_total.shape))
+            # print("image_embedding_total\t{}".format(image_embedding_total.shape))
         else:
-            print("inter_model\t{}".format(False))
-            print("image_embedding_total\t{}".format(image_embedding_total.shape))
-
+            # print("inter_model\t{}".format(False))
+            # print("image_embedding_total\t{}".format(image_embedding_total.shape))
+            pass
 
         joint_embedding = self.combine_embeddings(
             ["image", "text"],
