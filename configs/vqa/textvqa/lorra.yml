@@ -99,21 +99,21 @@ optimizer_attributes:
 training_parameters:
     device: cuda
     data_parallel: false
-    local_rank: 1
+    local_rank: 5
     logger_level: info
     clip_norm_mode: all
     clip_gradients: true
     max_grad_l2_norm: 0.25
     lr_scheduler: true
     lr_steps: 
-    - 60 # 14000 # 3500
+    - 1400 # 14000 # 3500
     lr_ratio: 0.01
     use_warmup: true
     warmup_factor: 0.2
-    warmup_iterations: 50 # 1000 # 250
-    max_iterations: 100 # 30000 # 24000 # 6000
-    log_interval: 5 # 100
-    snapshot_interval: 10 # 300
+    warmup_iterations: 100 # 1000 # 250
+    max_iterations: 2400 # 30000 # 24000 # 6000
+    log_interval: 50 # 100
+    snapshot_interval: 2000 # 300
     batch_size: 128
     num_workers: 7
     task_size_proportional_sampling: true
