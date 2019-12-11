@@ -7,8 +7,8 @@ from pythia.models.base_model import BaseModel
 from pythia.modules.embeddings import (ImageEmbedding, PreExtractedEmbedding,
                                        TextEmbedding)
 from pythia.modules.encoders import ImageEncoder
-from pythia.modules.layers import (ClassifierLayer, ModalCombineLayer,
-                                   ReLUWithWeightNormFC)
+from pythia.modules.layers import (ClassifierLayer, ModalCombineLayer, ModalCombineLayerLang, 
+                                   ModalCombineLayerPairwise, ReLUWithWeightNormFC)
 from pythia.utils.configuration import ConfigNode
 
 
@@ -23,9 +23,16 @@ class Pythia(BaseModel):
     def build(self):
         self._build_word_embedding()
         self._init_text_embeddings("text")
+        
+        self._init_lang_embeddings("lang")
+        
         self._init_feature_encoders("image")
         self._init_feature_embeddings("image")
         self._init_combine_layer("image", "text")
+
+        self._init_lang_combine_layer("text", "context")
+        self._init_pairwise_combine_layer("image", "context", "lang", "text")
+
         self._init_classifier(self._get_classifier_input_dim())
         self._init_extras()
 
@@ -62,9 +69,56 @@ class Pythia(BaseModel):
         setattr(self, attr + "_out_dim", embeddings_out_dim)
         setattr(self, attr, nn.ModuleList(text_embeddings))
 
+
+
+
+    def _init_lang_embeddings(self, attr="lang"):
+        if "embeddings" not in attr:
+            attr += "_embeddings"
+
+        lang_embeddings = []
+        # print("************")
+        # print("attr: ", attr)
+        lang_embeddings_list_config = self.config[attr]
+        # print("text_embeddings_list_config type 0: ", type(text_embeddings_list_config[0]), len(text_embeddings_list_config[0]))
+        # print("text_embeddings_list_config 0: ", text_embeddings_list_config[0])
+        embeddings_out_dim = 0
+
+        for lang_embedding in lang_embeddings_list_config:
+            embedding_type = lang_embedding.type
+            embedding_kwargs = ConfigNode(lang_embedding.params)
+
+            self._update_lang_embedding_args(embedding_kwargs)
+
+            embedding = TextEmbedding(embedding_type, **embedding_kwargs)
+
+            lang_embeddings.append(embedding)
+            embeddings_out_dim += embedding.text_out_dim
+
+        setattr(self, attr + "_out_dim", embeddings_out_dim)
+        # print("FOUND 1: {}".format(self.lang_embeddings_out_dim))
+        setattr(self, attr, nn.ModuleList(lang_embeddings))
+    
+
+
+
+
+
+
+
     def _update_text_embedding_args(self, args):
         # Add model_data_dir to kwargs
         args["model_data_dir"] = self.config["model_data_dir"]
+
+
+
+    def _update_lang_embedding_args(self, args):
+        # Add model_data_dir to kwargs
+        args["model_data_dir"] = self.config["model_data_dir"]
+
+
+
+
 
     def _init_feature_encoders(self, attr):
         feat_encoders = []
@@ -145,10 +199,56 @@ class Pythia(BaseModel):
             multi_modal_combine_layer,
         )
 
+
+
+    def _init_lang_combine_layer(self, attr1, attr2):
+        config_attr = attr1 + "_" + attr2 + "_modal_combine"
+
+        multi_modal_combine_layer = ModalCombineLayerLang(
+            self.config[config_attr]["type"],
+            getattr(self, self._get_embeddings_attr(attr1)),
+            getattr(self, self._get_embeddings_attr(attr2)),
+            **self.config[config_attr]["params"]
+        )
+
+        setattr(
+            self,
+            attr1 + "_" + attr2 + "_multi_modal_combine_layer",
+            multi_modal_combine_layer,
+        )
+        
+
+    def _init_pairwise_combine_layer(self, attr1, attr2, attr3, attr4):
+        config_attr = attr1 + "_" + attr2 + "_" + attr3 + "_" + attr4 + "_modal_combine"
+        #todo pair layer, add config
+        # print("FOUNDSSS {}".format(self.lang_embeddings_out_dim))
+        # print("FOUNDSSS {}".format(self.joint_lang_embeddings_out_dim))
+        multi_modal_combine_layer = ModalCombineLayerPairwise(
+            self.config[config_attr]["type"],
+            getattr(self, self._get_embeddings_attr(attr1)),
+            getattr(self, self._get_embeddings_attr(attr2)),
+            10000,
+            # getattr(self, self._get_embeddings_attr(attr3)),
+            getattr(self, self._get_embeddings_attr(attr4)),
+            **self.config[config_attr]["params"]
+        )
+
+        setattr(
+            self,
+            attr1 + "_" + attr2 + "_" + attr3 + "_" + attr4 + "_multi_modal_combine_layer",
+            multi_modal_combine_layer,
+        )
+
+
+
+
+
+
+
     def _init_classifier(self, combined_embedding_dim):
         # TODO: Later support multihead
         num_choices = registry.get(self._datasets[0] + "_num_final_outputs")
-
+        # print("INIT CLASSIFIER INDIM: {}".format(combined_embedding_dim))
         self.classifier = ClassifierLayer(
             self.config["classifier"]["type"],
             in_dim=combined_embedding_dim,
@@ -176,7 +276,9 @@ class Pythia(BaseModel):
         return params
 
     def _get_classifier_input_dim(self):
-        return self.image_text_multi_modal_combine_layer.out_dim
+        # return self.image_text_multi_modal_combine_layer.out_dim
+        # return self.image_context_lang_text_multi_modal_combine_layer.out_dim
+        return 15000
 
     def process_text_embedding(
         self, sample_list, embedding_attr="text_embeddings", info=None

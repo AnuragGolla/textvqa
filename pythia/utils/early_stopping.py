@@ -66,7 +66,7 @@ class EarlyStopping:
         ):
             self.best_monitored_value = value
             self.best_monitored_iteration = iteration
-            self.checkpoint.save(iteration, update_best=True)
+            # self.checkpoint.save(iteration, update_best=True)
 
         elif self.best_monitored_iteration + self.patience < iteration:
             self.activated = True
@@ -77,7 +77,8 @@ class EarlyStopping:
             else:
                 return False
         else:
-            self.checkpoint.save(iteration, update_best=False)
+            # self.checkpoint.save(iteration, update_best=False)
+            pass
 
         return False
 

@@ -35,6 +35,7 @@ model_attributes:
       params:
         img_hidden_dim: 5000
         text_hidden_dim: 300
+        lang_hidden_dim: 5000
     image_feature_embeddings:
     - modal_combine:
         type: non_linear_element_multiply
@@ -74,7 +75,32 @@ model_attributes:
         hidden_dim: 5000
         # 300 for FastText and 50 for order vectors
         context_dim: 350
+    text_context_modal_combine:
+      type: non_linear_element_multiply
+      params:
+        dropout: 0
+        hidden_dim: 5000
+        # 300 for FastText and 50 for order vectors
+        context_dim: 350
+    image_context_lang_text_modal_combine:
+      type: non_linear_element_multiply
+      params:
+        dropout: 0
+        hidden_dim: 5000
+        # 300 for FastText and 50 for order vectors
+        context_dim: 350
     text_embeddings:
+    - type: attention
+      params:
+        hidden_dim: 1024
+        num_layers: 1
+        conv1_out: 512
+        conv2_out: 2
+        dropout: 0
+        embedding_dim: 300
+        kernel_size: 1
+        padding: 0
+    lang_embeddings:
     - type: attention
       params:
         hidden_dim: 1024
@@ -114,7 +140,7 @@ training_parameters:
     max_iterations: 100 # 30000 # 24000 # 6000
     log_interval: 5 # 100
     snapshot_interval: 10 # 300
-    batch_size: 128
+    batch_size: 64
     num_workers: 7
     task_size_proportional_sampling: true
     monitored_metric: vqa_accuracy
@@ -123,4 +149,6 @@ training_parameters:
       image_feature_encoders: image_feature_encoders
       image_feature_embeddings_list: image_feature_embeddings_list
       image_text_multi_modal_combine_layer: image_text_multi_modal_combine_layer
+      text_context_multi_modal_combine_layer: text_context_multi_modal_combine_layer
+      image_context_lang_text_multi_modal_combine_layer: image_context_lang_text_multi_modal_combine_layer
     metric_minimize: false

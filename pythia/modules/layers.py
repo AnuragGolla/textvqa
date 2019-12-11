@@ -91,7 +91,7 @@ class ReLUWithWeightNormFC(nn.Module):
 class ClassifierLayer(nn.Module):
     def __init__(self, classifier_type, in_dim, out_dim, **kwargs):
         super(ClassifierLayer, self).__init__()
-
+        # print("CLASSIFIER in DIM: {}".format(in_dim))
         if classifier_type == "weight_norm":
             self.module = WeightNormClassifier(in_dim, out_dim, **kwargs)
         elif classifier_type == "logit":
@@ -111,14 +111,18 @@ class LogitClassifier(nn.Module):
     def __init__(self, in_dim, out_dim, **kwargs):
         super(LogitClassifier, self).__init__()
         input_dim = in_dim
+        # print("CALC LOG IN DIM: {}".format(in_dim))
         num_ans_candidates = out_dim
         text_non_linear_dim = kwargs["text_hidden_dim"]
         image_non_linear_dim = kwargs["img_hidden_dim"]
+        lang_non_linear_dim = kwargs["lang_hidden_dim"]
 
         self.f_o_text = ReLUWithWeightNormFC(input_dim, text_non_linear_dim)
         self.f_o_image = ReLUWithWeightNormFC(input_dim, image_non_linear_dim)
+        self.f_o_lang = ReLUWithWeightNormFC(input_dim, lang_non_linear_dim)
         self.linear_text = nn.Linear(text_non_linear_dim, num_ans_candidates)
         self.linear_image = nn.Linear(image_non_linear_dim, num_ans_candidates)
+        self.lang_image = nn.Linear(lang_non_linear_dim, num_ans_candidates)
 
         if "pretrained_image" in kwargs and kwargs["pretrained_text"] is not None:
             self.linear_text.weight.data.copy_(
@@ -131,11 +135,43 @@ class LogitClassifier(nn.Module):
             )
 
     def forward(self, joint_embedding):
+        # print("CALC LOG: {}".format(joint_embedding.shape))
         text_val = self.linear_text(self.f_o_text(joint_embedding))
         image_val = self.linear_image(self.f_o_image(joint_embedding))
-        logit_value = text_val + image_val
+        lang_val = self.lang_image(self.f_o_lang(joint_embedding))
+        logit_value = text_val + image_val + lang_val
 
         return logit_value
+
+# class LogitClassifier(nn.Module):
+#     def __init__(self, in_dim, out_dim, **kwargs):
+#         super(LogitClassifier, self).__init__()
+#         input_dim = in_dim
+#         num_ans_candidates = out_dim
+#         text_non_linear_dim = kwargs["text_hidden_dim"]
+#         image_non_linear_dim = kwargs["img_hidden_dim"]
+# 
+#         self.f_o_text = ReLUWithWeightNormFC(input_dim, text_non_linear_dim)
+#         self.f_o_image = ReLUWithWeightNormFC(input_dim, image_non_linear_dim)
+#         self.linear_text = nn.Linear(text_non_linear_dim, num_ans_candidates)
+#         self.linear_image = nn.Linear(image_non_linear_dim, num_ans_candidates)
+# 
+#         if "pretrained_image" in kwargs and kwargs["pretrained_text"] is not None:
+#             self.linear_text.weight.data.copy_(
+#                 torch.from_numpy(kwargs["pretrained_text"])
+#             )
+# 
+#         if "pretrained_image" in kwargs and kwargs["pretrained_image"] is not None:
+#             self.linear_image.weight.data.copy_(
+#                 torch.from_numpy(kwargs["pretrained_image"])
+#             )
+# 
+#     def forward(self, joint_embedding):
+#         text_val = self.linear_text(self.f_o_text(joint_embedding))
+#         image_val = self.linear_image(self.f_o_image(joint_embedding))
+#         logit_value = text_val + image_val
+# 
+#         return logit_value
 
 
 class WeightNormClassifier(nn.Module):
@@ -180,6 +216,57 @@ class ModalCombineLayer(nn.Module):
 
     def forward(self, *args, **kwargs):
         return self.module(*args, **kwargs)
+
+
+class ModalCombineLayerLang(nn.Module):
+    def __init__(self, combine_type, txt_emb_dim, context_emb_dim, **kwargs):
+        super(ModalCombineLayerLang, self).__init__()
+        # if combine_type == "MFH":
+        #     self.module = MFH(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "non_linear_element_multiply":
+        #     self.module = NonLinearElementMultiply(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "two_layer_element_multiply":
+        #     self.module = TwoLayerElementMultiply(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "top_down_attention_lstm":
+        #     self.module = TopDownAttentionLSTM(img_feat_dim, txt_emb_dim, **kwargs)
+        # else:
+        #     raise NotImplementedError("Not implemented combine type: %s" % combine_type)
+
+        self.module = NonLinearElementMultiplyLang(txt_emb_dim, **kwargs)
+        self.out_dim = self.module.out_dim
+
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
+
+
+class ModalCombineLayerPairwise(nn.Module):
+    def __init__(self, combine_type, img_feat_dim, context_emb_dim, joint_lang_dim, txt_emb_dim, **kwargs):
+        super(ModalCombineLayerPairwise, self).__init__()
+        # if combine_type == "MFH":
+        #     self.module = MFH(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "non_linear_element_multiply":
+        #     self.module = NonLinearElementMultiply(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "two_layer_element_multiply":
+        #     self.module = TwoLayerElementMultiply(img_feat_dim, txt_emb_dim, **kwargs)
+        # elif combine_type == "top_down_attention_lstm":
+        #     self.module = TopDownAttentionLSTM(img_feat_dim, txt_emb_dim, **kwargs)
+        # else:
+        #     raise NotImplementedError("Not implemented combine type: %s" % combine_type)
+
+        self.module = NonLinearElementMultiplyPairwise(img_feat_dim, context_emb_dim, joint_lang_dim, txt_emb_dim, **kwargs)
+        self.out_dim = self.module.out_dim
+
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
+
+
+
+
+
+
+
+
+
 
 
 class MfbExpand(nn.Module):
@@ -319,6 +406,124 @@ class NonLinearElementMultiply(nn.Module):
         joint_feature = self.dropout(joint_feature)
 
         return joint_feature
+
+
+
+
+
+
+
+# need to handle two situations,
+# first: image (N, K, i_dim), question (N, q_dim);
+# second: image (N, i_dim), question (N, q_dim);
+class NonLinearElementMultiplyLang(nn.Module):
+    def __init__(self, ques_emb_dim, **kwargs):
+        super(NonLinearElementMultiplyLang, self).__init__()
+        # self.fa_image = ReLUWithWeightNormFC(image_feat_dim, kwargs["hidden_dim"])
+        self.fa_txt = ReLUWithWeightNormFC(ques_emb_dim, kwargs["hidden_dim"])
+
+        context_dim = kwargs.get("context_dim", None)
+        if context_dim is None:
+            context_dim = ques_emb_dim
+
+        self.fa_context = ReLUWithWeightNormFC(context_dim, kwargs["hidden_dim"])
+        self.dropout = nn.Dropout(kwargs["dropout"])
+        self.out_dim = kwargs["hidden_dim"]
+
+    def forward(self, question_embedding, context_embedding=None):
+        # print("-------------------------------")
+        # print("ARGS -> q_emb: {}, context_emb: {}".format(question_embedding.shape, context_embedding.shape))
+        # image_fa = self.fa_image(image_feat)
+        question_fa = self.fa_txt(question_embedding)
+        # print("question_fa: {}".format(question_fa.shape))
+        
+        # if len(image_feat.size()) == 3:
+        #     question_fa_expand = question_fa.unsqueeze(1)
+        # else:
+        #     question_fa_expand = question_fa
+
+        question_fa_expand = question_fa
+        joint_feature = question_fa
+        # print("joint_feature: {}".format(joint_feature.shape))
+
+        if context_embedding is not None:
+            context_fa = self.fa_context(context_embedding)
+            # print("context_fa: {}".format(context_fa.shape))
+
+            text_context_joint_feature = context_fa * question_fa_expand
+            # print("text_context_joint_feature: {}".format(text_context_joint_feature.shape))
+            joint_feature = torch.cat([joint_feature, text_context_joint_feature], dim=1)
+            # print("joint_feature: {}".format(joint_feature.shape))
+
+        joint_feature = self.dropout(joint_feature)
+        # print("joint_feature dropout: {}".format(joint_feature.shape))
+
+        return joint_feature
+
+
+
+# need to handle two situations,
+# first: image (N, K, i_dim), question (N, q_dim);
+# second: image (N, i_dim), question (N, q_dim);
+class NonLinearElementMultiplyPairwise(nn.Module):
+    def __init__(self, image_feat_dim, context_emb_dim, lang_emb_dim, ques_emb_dim, **kwargs):
+        super(NonLinearElementMultiplyPairwise, self).__init__()
+        self.fa_image = ReLUWithWeightNormFC(image_feat_dim, kwargs["hidden_dim"])
+        self.fa_txt = ReLUWithWeightNormFC(ques_emb_dim, kwargs["hidden_dim"])
+
+        context_dim = kwargs.get("context_dim", None)
+        if context_dim is None:
+            context_dim = ques_emb_dim
+
+        self.fa_context = ReLUWithWeightNormFC(context_dim, kwargs["hidden_dim"])
+        # print("FOUND LANG DIM: {}".format(lang_emb_dim))
+        self.fa_lang = ReLUWithWeightNormFC(lang_emb_dim, kwargs["hidden_dim"])
+        
+        self.dropout = nn.Dropout(kwargs["dropout"])
+        self.out_dim = kwargs["hidden_dim"]
+
+    def forward(self, image_feat, context_embedding, lang_embedding, question_embedding):
+        # print("-------------------------------")
+        # print("ARGS -> image_emb: {}, context_emb: {}, lang_emb: {}, question_emb: {}".format(image_feat.shape, context_embedding.shape, lang_embedding.shape, question_embedding.shape))
+        image_fa = self.fa_image(image_feat)
+        lang_fa = self.fa_lang(lang_embedding)
+        context_fa = self.fa_context(context_embedding)
+        question_fa = self.fa_txt(question_embedding)
+        # print("image_fa: {}".format(image_fa.shape))
+        # print("lang_fa: {}".format(lang_fa.shape))
+        # print("context_fa: {}".format(context_fa.shape))
+        # print("question_fa: {}".format(question_fa.shape))
+
+        if len(image_feat.size()) == 3:
+            question_fa_expand = question_fa.unsqueeze(1)
+        else:
+            question_fa_expand = question_fa
+
+        image_joint = image_fa * question_fa_expand
+        context_joint = image_fa * question_fa_expand
+        lang_joint = image_fa * question_fa_expand
+        # print("image_joint: {}".format(image_joint.shape))
+        # print("lang_joint: {}".format(lang_joint.shape))
+        # print("context_joint: {}".format(context_joint.shape))
+
+        joint_feature = torch.cat([image_joint, context_joint, lang_joint], dim=1)
+        # print("joint: {}".format(joint_feature.shape))
+
+        joint_feature = self.dropout(joint_feature)
+        # print("joint drop: {}".format(joint_feature.shape))
+
+        return joint_feature
+
+
+
+
+
+
+
+
+
+
+
 
 
 class TopDownAttentionLSTM(nn.Module):
