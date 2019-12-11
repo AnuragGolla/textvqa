@@ -134,7 +134,7 @@ class TopDownAttention(nn.Module):
         return attention
 
     def forward(self, image_feat, question_embedding, image_locs=None):
-        print("[ topdown attention ] runs")
+        # print("[ topdown attention ] runs")
         # N x K x joint_dim
         joint_feature = self.combination_layer(image_feat, question_embedding)
         # N x K x n_att
